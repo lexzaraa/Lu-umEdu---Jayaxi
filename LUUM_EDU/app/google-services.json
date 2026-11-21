@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "807070156176",
+    "project_id": "luumedu",
+    "storage_bucket": "luumedu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:807070156176:android:8e8c036ab1b502d1469f15",
+        "android_client_info": {
+          "package_name": "mx.luumedu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1mJBSmuHcdTBzOPkDX0_4k7h5CWH54NM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

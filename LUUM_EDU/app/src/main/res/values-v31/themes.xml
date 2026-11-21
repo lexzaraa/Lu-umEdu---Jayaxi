@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.LuumEdu" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/luum_fondo</item>
+        <!-- Pantalla de arranque del sistema: mismo fondo oscuro y sin ícono,
+             para entrar sin saltos a la intro animada de la app. -->
+        <item name="android:windowSplashScreenBackground">@color/luum_fondo</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_vacio</item>
+    </style>
+</resources>

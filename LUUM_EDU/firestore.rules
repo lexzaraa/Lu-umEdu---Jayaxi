@@ -1,0 +1,178 @@
+rules_version = '2';
+
+// =====================================================
+// LUUM EDU - Reglas de seguridad de Firestore
+// =====================================================
+// Rol de administrador: users/{uid}.role == "admin" y status == "approved".
+// Ese rol SOLO se asigna a mano desde la consola de Firebase (o con Admin SDK).
+// Ningun usuario puede darse a si mismo un rol o un estado desde la app.
+// =====================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funciones auxiliares ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function myDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function me() {
+      return get(myDocPath()).data;
+    }
+
+    // institutionId puede no existir en perfiles creados a mano.
+    function myInstitution() {
+      return ('institutionId' in me()) ? me().institutionId : null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(myDocPath())
+        && me().role == 'admin'
+        && me().status == 'approved';
+    }
+
+    function isApprovedDirector() {
+      return signedIn()
+        && exists(myDocPath())
+        && me().role == 'director'
+        && me().status == 'approved';
+    }
+
+    function isApproved() {
+      return signedIn()
+        && exists(myDocPath())
+        && me().status == 'approved'
+        && me().role in ['student', 'parent', 'teacher', 'director', 'admin'];
+    }
+
+    // ---------- Perfiles de usuario ----------
+
+    match /users/{uid} {
+
+      // Cada persona lee su perfil; el administrador lee todos.
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Registro: la persona crea SOLO su perfil, siempre como "pending".
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+             'uid', 'displayName', 'email', 'requestedRole',
+             'requestedInstitutionId', 'role', 'status',
+             'institutionId', 'createdAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.lower() == request.auth.token.email.lower()
+        && request.resource.data.role == 'pending'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.institutionId == null
+        && request.resource.data.requestedRole in ['student', 'parent', 'teacher', 'director']
+        && request.resource.data.createdAt == request.time;
+
+      // Actualizacion:
+      //  - El administrador puede aprobar, rechazar y cambiar roles.
+      //  - Un director aprobado, sin escuela, puede vincular la escuela que
+      //    acaba de crear (solo institutionId y updatedAt).
+      allow update: if isAdmin()
+        || (isOwner(uid)
+            && resource.data.role == 'director'
+            && resource.data.status == 'approved'
+            && (!('institutionId' in resource.data) || resource.data.institutionId == null)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['institutionId', 'updatedAt'])
+            && request.resource.data.institutionId is string
+            && getAfter(/databases/$(database)/documents/institutions/$(request.resource.data.institutionId))
+                 .data.directorUid == request.auth.uid);
+
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Instituciones ----------
+
+    match /institutions/{institutionId} {
+
+      // Las instituciones activas son publicas (se muestran al registrarse).
+      // Las pendientes solo las ve su director o el administrador.
+      allow read: if resource.data.status == 'active'
+        || (signedIn() && resource.data.directorUid == request.auth.uid)
+        || isAdmin();
+
+      // Un director aprobado, sin escuela, solicita una nueva (siempre "pending").
+      allow create: if isApprovedDirector()
+        && myInstitution() == null
+        && request.resource.data.keys().hasOnly([
+             'name', 'type', 'address', 'latitude', 'longitude',
+             'status', 'directorUid', 'createdAt'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.directorUid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.type is string
+        && request.resource.data.type.size() <= 80
+        && request.resource.data.address is string
+        && request.resource.data.address.size() <= 250
+        && request.resource.data.latitude is number
+        && request.resource.data.latitude >= -90
+        && request.resource.data.latitude <= 90
+        && request.resource.data.longitude is number
+        && request.resource.data.longitude >= -180
+        && request.resource.data.longitude <= 180
+        && request.resource.data.createdAt == request.time;
+
+      // Solo el administrador activa, rechaza, edita o elimina instituciones.
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- Reportes (observaciones) ----------
+
+    match /reports/{reportId} {
+
+      // Cada persona lee sus propios reportes; el administrador lee todos.
+      allow read: if signedIn()
+        && (resource.data.authorUid == request.auth.uid || isAdmin());
+
+      // Solo cuentas aprobadas crean reportes, a su nombre y con su institucion.
+      allow create: if isApproved()
+        && request.resource.data.keys().hasOnly([
+             'title', 'category', 'place', 'description',
+             'authorUid', 'authorName', 'institutionId', 'createdAt'])
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.institutionId == myInstitution()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.category is string
+        && request.resource.data.category.size() >= 1
+        && request.resource.data.category.size() <= 60
+        && request.resource.data.place is string
+        && request.resource.data.place.size() <= 120
+        && request.resource.data.description is string
+        && request.resource.data.description.size() >= 1
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 100
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isAdmin() || (signedIn() && resource.data.authorUid == request.auth.uid);
+    }
+
+    // ---------- Todo lo demas: denegado ----------
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

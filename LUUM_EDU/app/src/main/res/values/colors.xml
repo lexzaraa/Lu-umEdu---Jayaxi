@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Paleta de marca LUUM EDU (espejo de ui/theme/Color.kt) -->
+    <color name="luum_fondo">#FF080E19</color>
+    <color name="luum_turquesa">#FF14B8A6</color>
+    <color name="luum_turquesa_claro">#FF5EEAD4</color>
+    <color name="luum_turquesa_logo">#FF019485</color>
+    <color name="luum_verde">#FF22C55E</color>
+    <color name="luum_verde_logo">#FF02A215</color>
+    <color name="luum_azul_marino">#FF002B71</color>
+    <color name="luum_ambar">#FFFFB74D</color>
+    <color name="luum_texto">#FFE7F0FB</color>
+</resources>
