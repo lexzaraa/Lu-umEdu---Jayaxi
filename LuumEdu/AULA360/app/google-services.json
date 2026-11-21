@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "342282629068",
+    "project_id": "aula360-e3718",
+    "storage_bucket": "aula360-e3718.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:342282629068:android:b60f7c8790e44ab1833769",
+        "android_client_info": {
+          "package_name": "mx.aula360.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpiLK21MoPoAzThDu7I5J_wL_pis1fdhs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
